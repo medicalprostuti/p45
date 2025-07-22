@@ -1,0 +1,1128 @@
+<!DOCTYPE html>
+<html lang="bn">
+  <head>
+    <script>
+      document.addEventListener("contextmenu", (event) =>
+        event.preventDefault()
+      );
+      document.addEventListener("keydown", (event) => {
+        if (
+          (event.ctrlKey &&
+            ["u", "s", "i", "j"].includes(event.key.toLowerCase())) ||
+          event.key === "F12"
+        ) {
+          event.preventDefault();
+        }
+      });
+    </script>
+
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Online Exam</title>
+    <!-- Chart.js CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&display=swap");
+
+      body {
+        font-family: "Hind Siliguri", sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        font-family: "Hind Siliguri", sans-serif;
+        width: 100%;
+        margin: auto;
+        background-color: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        min-height: 80vh;
+      }
+
+      .exam-content {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      h1 {
+        color: #1b0b54;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+
+      #timer {
+        font-size: 20px;
+        color: #1b0b54;
+        margin-bottom: 5px;
+        font-weight: normal;
+        text-align: center;
+      }
+
+      #exam-info {
+        font-size: 16px;
+        color: black;
+        margin-bottom: 20px;
+        text-align: center;
+      }
+
+      #exam {
+        width: 100%;
+        min-height: 100px;
+      }
+
+      .chart-container {
+        width: 200px;
+        height: 200px;
+        margin: 10px auto;
+        background-color: #f9f9f9;
+        border-radius: 15px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        display: none;
+        padding: 10px;
+      }
+
+      .chart-container.visible {
+        display: block;
+      }
+
+      .question-container {
+        text-align: left;
+        margin-bottom: 20px;
+        display: block;
+      }
+
+      .question-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+      }
+
+      .options {
+        margin-top: 10px;
+      }
+
+      .option {
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        text-transform: uppercase;
+      }
+
+      .circle {
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        border: 2px solid #1b0b54;
+        margin-right: 10px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #1b0b54;
+        font-weight: bold;
+        font-size: 18px;
+      }
+
+      .selected .circle {
+        background-color: #1b0b54;
+        color: white;
+      }
+
+      .correct-text {
+        color: green !important;
+      }
+
+      .incorrect-text {
+        color: #ff0800 !important;
+      }
+
+      .unattempted-text {
+        color: orange !important;
+      }
+
+      #submitBtn {
+        font-family: hind siliguri;
+        padding: 15px 30px;
+        background-color: #1b0b54;
+        color: white;
+        border: none;
+        cursor: pointer;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 10px;
+        margin-top: 20px;
+        width: 200px;
+        transition: background-color 0.3s ease;
+      }
+
+      #submitBtn:hover {
+        background-color: #1b0b54;
+      }
+
+      .popup {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background-color: white;
+        padding: 20px;
+        width: 300px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+        border-radius: 10px;
+        text-align: center;
+        display: none;
+        z-index: 1000;
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      .popup.slide-out {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+      }
+
+      .popup-header {
+        background-color: #1b0b54;
+        color: white;
+        padding: 10px;
+        font-size: 20px;
+        font-weight: bold;
+        border-radius: 10px 10px 0 0;
+      }
+
+      .popup-body {
+        padding: 15px;
+      }
+
+      .popup-body p {
+        margin: 10px 0;
+      }
+
+      .confirm-btn {
+        font-family: hind siliguri;
+        background-color: #34c759;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .confirm-btn:hover {
+        background-color: #34c759;
+      }
+
+      .cancel-btn {
+        background-color: #ff3b30;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        border-radius: 5px;
+        margin: 5px;
+      }
+
+      .cancel-btn:hover {
+        background-color: #e02b21;
+      }
+
+      .explanation-dropdown {
+        display: none;
+        margin-top: 10px;
+      }
+
+      .explanation-dropdown.visible {
+        display: block;
+      }
+
+      .explanation-btn {
+        background-color: #1b0b54;
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 14px;
+        font-family: "Hind Siliguri", sans-serif;
+        width: 40%;
+        text-align: left;
+        position: relative;
+      }
+
+      .explanation-btn:hover {
+        background-color: #1b0b54;
+      }
+
+      .explanation-btn::after {
+        content: "▼";
+        position: absolute;
+        right: 10px;
+        font-size: 12px;
+      }
+
+      .explanation-btn.active::after {
+        content: "▲";
+      }
+
+      .explanation-content {
+        display: none;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        font-size: 14px;
+        color: #000000;
+        text-align: left;
+        max-height: 450px;
+        overflow-y: auto;
+        margin-top: 5px;
+      }
+
+      .explanation-content.visible {
+        display: block;
+      }
+
+      .explanation-content p {
+        margin: 0 0 10px 0;
+      }
+
+      .explanation-content ul {
+        margin: 0;
+        padding-left: 20px;
+      }
+
+      .explanation-content li {
+        margin-bottom: 5px;
+      }
+
+      .explanation-content strong {
+        color: #1b0b54;
+      }
+
+      .explanation-label {
+        font-weight: bold;
+        color: #1b0b54;
+        margin-bottom: 10px;
+        display: block;
+      }
+
+      .locked .option {
+        pointer-events: none;
+        cursor: default;
+      }
+
+      .locked .option.selected {
+        pointer-events: none;
+        cursor: default;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container" id="examContainer">
+      <div class="exam-content">
+        <h1>ফিজিক্স ১ম অনুশীলন</h1>
+        <div id="timer"></div>
+        <div id="exam-info"></div>
+        <div class="chart-container">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div id="exam">
+          <!-- Questions will be generated dynamically -->
+        </div>
+        <button id="submitBtn">সাবমিট</button>
+      </div>
+    </div>
+
+    <div class="popup" id="scorePopup">
+      <div class="popup-header">তোমার স্কোর</div>
+      <div class="popup-body">
+        <p><strong>মোট প্রশ্ন:</strong> <span id="totalQuestions"></span></p>
+        <p>
+          <strong>উত্তর দিয়েছো:</strong>
+          <span style="color: #000000" id="answered"></span>
+        </p>
+        <p>
+          <strong>সঠিক উত্তর:</strong>
+          <span style="color: #0ab853" id="correctAnswers"></span>
+        </p>
+        <p>
+          <strong>ভুল উত্তর:</strong>
+          <span style="color: #f81010" id="wrongAnswers"></span>
+        </p>
+        <p>
+          <strong>অনুত্তরিত:</strong>
+          <span style="color: #ffc801" id="unanswered"></span>
+        </p>
+        <p><strong>তোমার চূড়ান্ত স্কোর:</strong></p>
+        <h2 style="color: #1b0b54"><span id="finalScore"></span></h2>
+        <form id="scoreForm" action="https://formspree.io/f/xpby" method="POST">
+          <input type="hidden" name="userID" id="formUserID" />
+          <input type="hidden" name="finalScore" id="formFinalScore" />
+          <input type="hidden" name="correctAnswers" id="formCorrectAnswers" />
+          <input type="hidden" name="wrongAnswers" id="formWrongAnswers" />
+          <input type="hidden" name="unanswered" id="formUnanswered" />
+          <button
+            type="submit"
+            class="confirm-btn"
+            style="background-color: #1b0b54"
+          >
+            <b>ওকে</b>
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <div class="popup" id="confirmPopup">
+      <div class="popup-header">কনফার্ম করো</div>
+      <div class="popup-body">
+        <p>
+          ভালো করে দেখে নাও! <br />
+          পরীক্ষা শেষ করতে চাও তো?
+        </p>
+        <button class="confirm-btn" onclick="confirmSubmit()">
+          <b>হ্যাঁ</b>
+        </button>
+        <button class="cancel-btn" onclick="cancelSubmit()"><b>না</b></button>
+      </div>
+    </div>
+
+    <script>
+      let chartInstance = null;
+
+      document.addEventListener("DOMContentLoaded", function () {
+        console.log("DOM fully loaded and parsed");
+        const examContainer = document.getElementById("examContainer");
+        if (!examContainer) {
+          console.error("Exam container not found!");
+          return;
+        }
+        try {
+          sessionStorage.setItem("isLoggedIn", "true");
+          sessionStorage.setItem("userID", "anonymous");
+          console.log(
+            "Session storage set: isLoggedIn = true, userID = anonymous"
+          );
+        } catch (e) {
+          console.error("Session storage error:", e);
+        }
+        examContainer.style.display = "block";
+        console.log("Exam container displayed");
+        startTimer();
+        generateQuestions();
+
+        window.addEventListener("beforeunload", function (event) {
+          if (
+            examContainer.style.display === "block" &&
+            sessionStorage.getItem("isLoggedIn") === "true"
+          ) {
+            autoSubmitScore();
+          }
+        });
+      });
+
+      const questions = [
+        {
+          id: 1,
+          question:
+            "শব্দের উপরিপাতন নীতির উপর ভিত্তি করে নিচের কোনটি ব্যাখ্যা করা যায়?",
+          options: {
+            a: "মুক্ত কম্পন",
+            b: "পরবশ কম্পন",
+            c: "অনুনাদ",
+            d: "স্বরকম্প",
+          },
+          correct: "d",
+          explanation:
+            "<p>উপরিপাতন নীতি (Principle of Superposition) বলে যে, যখন একাধিক তরঙ্গ একটি নির্দিষ্ট স্থানে একই সাথে মিলিত হয়, তখন সেই স্থানের কণার মোট সরণ হবে প্রতিটি পৃথক তরঙ্গের দ্বারা সৃষ্ট সরণগুলোর ভেক্টর যোগফল। এই নীতি বিভিন্ন তরঙ্গ ঘটনা ব্যাখ্যা করতে ব্যবহৃত হয়।</p><br><p><ul><li><b>মুক্ত কম্পন (Free vibration):</b> এটি কোনো বাহ্যিক বলের প্রভাব ছাড়া একটি বস্তুর স্বাভাবিক কম্পন। এটি উপরিপাতন নীতির সাথে সরাসরি সম্পর্কিত নয়।</li><li><b>পরবশ কম্পন (Forced vibration):</b> এটি একটি বস্তুর কম্পন যা একটি বাহ্যিক পর্যায়ক্রমিক বলের প্রভাবে ঘটে। এটিও উপরিপাতন নীতির সাথে সরাসরি সম্পর্কিত নয়।</li><li><b>অনুনাদ (Resonance):</b> এটি পরবশ কম্পনের একটি বিশেষ অবস্থা যেখানে বাহ্যিক বলের কম্পাঙ্ক বস্তুর স্বাভাবিক কম্পাঙ্কের সমান হয়, ফলে বিস্তারের বৃদ্ধি ঘটে। এটি যদিও উপরিপাতন নীতির ফল হতে পারে (যেমন, যখন একটি সিস্টেম তার নিজস্ব ফ্রিকোয়েন্সিতে শক্তি শোষণ করে), তবে এটি সরাসরি উপরিপাতন নীতির দ্বারা ব্যাখ্যা করা হয় না, বরং এটি একটি বিশেষ ঘটনা।</li><li><b>স্বরকম্প (Beats):</b> এটি দুটি সামান্য ভিন্ন কম্পাঙ্কের শব্দ তরঙ্গ যখন একই সময়ে একই স্থানে মিলিত হয় তখন উপরিপাতন নীতির কারণে শব্দের তীব্রতার পর্যায়ক্রমিক হ্রাস-বৃদ্ধি ঘটে। এটি সরাসরি উপরিপাতন নীতির প্রয়োগ। দুটি তরঙ্গের উপরিপাতনের ফলেই স্বরকম্প উৎপন্ন হয়।</li></ul></p><br><p>সুতরাং, স্বরকম্প সরাসরি শব্দের উপরিপাতন নীতির উপর ভিত্তি করে ব্যাখ্যা করা যায়।</p>",
+        },
+        {
+          id: 2,
+          question: "বীট কোন ঘটনার ফল?",
+          options: {
+            a: "অনুনাদ",
+            b: "উপরিপাতন",
+            c: "প্রতিফলন",
+            d: "অপবর্তন",
+          },
+          correct: "b",
+          explanation:
+            "<p>বীট বা স্বরকম্প (Beats) হলো এমন একটি ঘটনা যেখানে দুটি সামান্য ভিন্ন কম্পাঙ্কের তরঙ্গ যখন একই সময়ে একই স্থানে মিলিত হয় (উপরিপাতিত হয়), তখন লব্ধি তরঙ্গের তীব্রতার পর্যায়ক্রমিক হ্রাস-বৃদ্ধি ঘটে।</p><br><p><ul><li><b>অনুনাদ (Resonance):</b> এটি একটি বিশেষ অবস্থা যেখানে একটি সিস্টেমের প্রাকৃতিক কম্পাঙ্ক একটি বাহ্যিক চালক বলের কম্পাঙ্কের সাথে মিলে যায়, ফলে বিস্তারের বড় বৃদ্ধি ঘটে।</li><li><b>উপরিপাতন (Superposition):</b> এটি সেই নীতি যা বলে যে, যখন দুটি বা ততোধিক তরঙ্গ একটি মাধ্যমে একই সময়ে মিলিত হয়, তখন লব্ধি সরণ প্রতিটি পৃথক তরঙ্গের সরণের ভেক্টর সমষ্টি হয়। বীট উপরিপাতন নীতির একটি প্রত্যক্ষ ফল।</li><li><b>প্রতিফলন (Reflection):</b> এটি তরঙ্গের কোনো পৃষ্ঠ থেকে ফিরে আসার ঘটনা।</li><li><b>অপবর্তন (Diffraction):</b> এটি তরঙ্গের কোনো বাধা বা ছিদ্রের ধার ঘেঁষে বেঁকে যাওয়ার ঘটনা।</li></ul></p><br><p>অতএব, বীট হলো উপরিপাতন ঘটনার ফল।</p>",
+        },
+        {
+          id: 3,
+          question: "গঠনমূলক ব্যতিচারের ক্ষেত্রে তরঙ্গদ্বয়-",
+          options: {
+            a: "সমদশায় মিলিত হয়",
+            b: "বিপরীত দশায় মিলিত হয়",
+            c: "তরঙ্গদ্বয়ের দশা π/2 হয়",
+            d: "তরঙ্গদ্বয়ের দশা পার্থক্য π/4 হয়",
+          },
+          correct: "a",
+          explanation: `<p>ব্যতিচার (Interference) হলো দুটি বা ততোধিক তরঙ্গের উপরিপাতনের ফল। ব্যতিচার দুই প্রকারের হয়: গঠনমূলক ব্যতিচার (Constructive Interference) এবং ধ্বংসাত্মক ব্যতিচার (Destructive Interference)।</p><br>
+<p><ul>
+<li><b>গঠনমূলক ব্যতিচার:</b> যখন দুটি তরঙ্গ এমনভাবে উপরিপাতিত হয় যে তাদের প্রভাব একে অপরকে বাড়িয়ে তোলে, তখন তাকে গঠনমূলক ব্যতিচার বলে। এর জন্য তরঙ্গদ্বয়কে <b>সমদশায় (in phase)</b> মিলিত হতে হয়। অর্থাৎ, একটি তরঙ্গের তরঙ্গচূড়া অপরটির তরঙ্গচূড়ার সাথে এবং একটি তরঙ্গের তরঙ্গখাঁজ অপরটির তরঙ্গখাঁজের সাথে মিলিত হয়। এর ফলে লব্ধি তরঙ্গের বিস্তার সর্বোচ্চ হয়। গঠনমূলক ব্যতিচারের ক্ষেত্রে দশা পার্থক্য 2nπ (যেখানে n = 0, 1, 2, ...) এবং পথ পার্থক্য nλ হয়।</li>
+<li><b>ধ্বংসাত্মক ব্যতিচার:</b> যখন দুটি তরঙ্গ এমনভাবে উপরিপাতিত হয় যে তাদের প্রভাব একে অপরকে বাতিল করে দেয়, তখন তাকে ধ্বংসাত্মক ব্যতিচার বলে। এর জন্য তরঙ্গদ্বয়কে <b>বিপরীত দশায় (out of phase)</b> মিলিত হতে হয়। অর্থাৎ, একটি তরঙ্গের তরঙ্গচূড়া অপরটির তরঙ্গখাঁজের সাথে মিলিত হয়। এর ফলে লব্ধি তরঙ্গের বিস্তার সর্বনিম্ন (প্রায় শূন্য) হয়। ধ্বংসাত্মক ব্যতিচারের ক্ষেত্রে দশা পার্থক্য (2n+1)π (যেখানে n = 0, 1, 2, ...) এবং পথ পার্থক্য (2n+1)λ/2 হয়।</li>
+</ul></p><br>
+<p>সুতরাং, গঠনমূলক ব্যতিচারের ক্ষেত্রে তরঙ্গদ্বয় সমদশায় মিলিত হয়।</p>`,
+        },
+        {
+          id: 4,
+          question:
+            "যখন দুটি সদৃশ অগ্রগামী তরঙ্গ পরস্পরের উপর উপরিপাতিত হয়, তখন লব্ধি তরঙ্গের বেগ-",
+          options: {
+            a: "বৃদ্ধি পায়",
+            b: "হ্রাস পায়",
+            c: "শূন্য হয়ে যায়",
+            d: "অপরিবর্তিত থাকে",
+          },
+          correct: "d",
+          explanation:
+            "<p>তরঙ্গের উপরিপাতন (Superposition) ঘটে যখন দুটি বা ততোধিক তরঙ্গ একই সময়ে একটি মাধ্যমে মিলিত হয়। এই নীতি অনুযায়ী, লব্ধি সরণ প্রতিটি পৃথক তরঙ্গের সরণের ভেক্টর সমষ্টি হয়।</p><br><p>তবে, উপরিপাতন তরঙ্গের <b>বেগ (velocity)</b>, <b>কম্পাঙ্ক (frequency)</b> বা <b>তরঙ্গদৈর্ঘ্য (wavelength)</b> পরিবর্তন করে না। তরঙ্গের বেগ শুধুমাত্র মাধ্যমের বৈশিষ্ট্যের উপর নির্ভর করে। যেহেতু উপরিপাতনের ফলে মাধ্যম বা এর বৈশিষ্ট্য পরিবর্তিত হয় না, তাই তরঙ্গের বেগও অপরিবর্তিত থাকে।</p><br><p>উপরিপাতন মূলত লব্ধি তরঙ্গের <b>বিস্তার (amplitude)</b> এবং <b>তীব্রতা (intensity)</b> পরিবর্তন করে (যেমন গঠনমূলক বা ধ্বংসাত্মক ব্যতিচারে)।</p><br><p>সুতরাং, যখন দুটি সদৃশ অগ্রগামী তরঙ্গ পরস্পরের উপর উপরিপাতিত হয়, তখন লব্ধি তরঙ্গের বেগ অপরিবর্তিত থাকে।</p>",
+        },
+        {
+          id: 5,
+          question:
+            "a বিস্তার সম্পন্ন দুটি তরঙ্গের উপরিপাতনের ফলে সৃষ্ট লব্ধি তরঙ্গের সর্বোচ্চ বিস্তারের মান কত?",
+          options: {
+            a: "a",
+            b: "a/2",
+            c: "2a",
+            d: "4a",
+          },
+          correct: "c",
+          explanation: `<p><p>লব্ধি তরঙ্গের সর্বোচ্চ বিস্তার (Maximum amplitude) ঘটে যখন দুটি তরঙ্গ গঠনমূলক ব্যতিচার (Constructive Interference) তৈরি করে। গঠনমূলক ব্যতিচারের ক্ষেত্রে, তরঙ্গদ্বয় সমদশায় মিলিত হয়, যার ফলে তাদের বিস্তারগুলো যোগ হয়ে যায়।</p><br>
+<p>যদি দুটি তরঙ্গের বিস্তার a হয় এবং তারা সমদশায় মিলিত হয়, তবে লব্ধি তরঙ্গের বিস্তার A<sub>max</sub> হবে:</p><br>
+<p>A<sub>max</sub> = a + a = 2a</p><br>
+<p>অন্যদিকে, যদি তারা বিপরীত দশায় মিলিত হয় (ধ্বংসাত্মক ব্যতিচার), তাহলে লব্ধি বিস্তার A<sub>min</sub> = |a - a| = 0 হবে (যদি বিস্তার সমান হয়)।</p><br>
+<p>প্রশ্নটি 'সর্বোচ্চ বিস্তার' চেয়েছে, তাই উত্তর হবে 2a।</p>`,
+        },
+        {
+          id: 6,
+          question: "পথ পার্থক্য বা দূরত্ব λ-এর জন্য দশা পার্থক্য-",
+          options: {
+            a: "2π",
+            b: "π",
+            c: "π/2",
+            d: "π/4",
+          },
+          correct: "a",
+          explanation: `<p>দশা পার্থক্য (Δφ) এবং পথ পার্থক্য (Δx) এর মধ্যে সম্পর্ক হলো:</p><br>
+<p>Δφ = (2π/λ) × Δx</p><br>
+<p>এখানে, λ হলো তরঙ্গদৈর্ঘ্য।</p><br>
+<p>প্রশ্নানুসারে, পথ পার্থক্য Δx = λ</p><br>
+<p>এখন, সূত্রে মান বসিয়ে পাই:</p><br>
+<p>Δφ = (2π/λ) × λ</p><br>
+<p>Δφ = 2π</p><br>
+<p>অর্থাৎ, এক তরঙ্গদৈর্ঘ্য (λ) পথ পার্থক্যের জন্য দশা পার্থক্য 2π রেডিয়ান (বা 360°) হয়। এর মানে হলো, এক তরঙ্গদৈর্ঘ্য দূরত্বে অবস্থিত দুটি বিন্দুর দশা একই হয়।</p>`,
+        },
+        {
+          id: 7,
+          question:
+            "স্থির তরঙ্গের পর পর দুইটি নিস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব-",
+          options: {
+            a: "2λ",
+            b: "λ/2",
+            c: "3λ/2",
+            d: "λ",
+          },
+          correct: "b",
+          explanation: `<p>স্থির তরঙ্গ (Stationary wave) হলো দুটি একই কম্পাঙ্ক ও বিস্তার সম্পন্ন অগ্রগামী তরঙ্গের বিপরীত দিক থেকে উপরিপাতনের ফলে সৃষ্ট একটি তরঙ্গ প্যাটার্ন। স্থির তরঙ্গে কিছু নির্দিষ্ট বিন্দুতে কণাগুলো সর্বদা স্থির থাকে, এদেরকে নিস্পন্দ বিন্দু (Nodes) বলে। আবার কিছু নির্দিষ্ট বিন্দুতে কণাগুলোর বিস্তার সর্বোচ্চ হয়, এদেরকে সুস্পন্দ বিন্দু (Antinodes) বলে।</p><br>
+<p>স্থির তরঙ্গের বৈশিষ্ট্য হলো:</p><br>
+<p><ul>
+<li>পর পর দুটি নিস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব = λ/2</li>
+<li>পর পর দুটি সুস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব = λ/2</li>
+<li>একটি নিস্পন্দ বিন্দু এবং তার পরবর্তী সুস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব = λ/4</li>
+</ul></p><br>
+<p>সুতরাং, স্থির তরঙ্গের পর পর দুইটি নিস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব হলো λ/2।</p>`,
+        },
+        {
+          id: 8,
+          question:
+            "একটি স্থির তরঙ্গ সৃষ্টিকারী তরঙ্গগুলোর বিস্তার A হলে সুস্পন্দ বিন্দুগুলোর বিস্তার কত হবে?",
+          options: {
+            a: "±2A",
+            b: "A",
+            c: "3A/2",
+            d: "2A",
+          },
+          correct: "a",
+          explanation: `<p>স্থির তরঙ্গ (Stationary wave) দুটি একই কম্পাঙ্ক ও বিস্তার সম্পন্ন অগ্রগামী তরঙ্গের বিপরীত দিক থেকে উপরিপাতনের ফলে সৃষ্টি হয়।</p><br>
+<p>সুস্পন্দ বিন্দু (Antinode) হলো স্থির তরঙ্গের সেই বিন্দু যেখানে কণাগুলোর বিস্তার সর্বোচ্চ হয়। এই বিন্দুতে দুটি অগ্রগামী তরঙ্গ গঠনমূলক ব্যতিচার তৈরি করে, অর্থাৎ তারা সমদশায় মিলিত হয়।</p><br>
+<p>যদি প্রতিটি অগ্রগামী তরঙ্গের বিস্তার A হয়, তাহলে সুস্পন্দ বিন্দুতে তাদের বিস্তারগুলো যোগ হয়ে যাবে।</p><br>
+<p>সুস্পন্দ বিন্দুর বিস্তার = A + A = 2A</p><br>
+<p>তবে, কণাগুলোর সরণ উভয় দিকেই হতে পারে, তাই সর্বোচ্চ সরণকে ±2A দ্বারা প্রকাশ করা হয়। যদিও বেশিরভাগ সময় শুধু বিস্তার 2A লেখা হয়, ± চিহ্ন দিক নির্দেশ করে। প্রশ্নের অপশনগুলোতে ±2A দেওয়া আছে, যা সর্বোচ্চ সরণের সম্ভাব্য দিককেও বোঝায়।</p>
+"
+  },
+  {
+    "id": 9,
+    "question": "পাশাপাশি দুটি সুস্পন্দ বিন্দুর মধ্যবর্তী দশা পার্থক্য কত?",
+    "options": {
+      "a": "π/4",
+      "b": "π/2",
+      "c": "π",
+      "d": "2π"
+    },
+    "correct": "c",
+    "explanation": "<p>এই প্রশ্নটি আসলে একটু বিভ্রান্তিকর হতে পারে, কারণ স্থির তরঙ্গের (stationary wave) ক্ষেত্রে 'দশা পার্থক্য' এর ধারণাটি অগ্রগামী তরঙ্গের চেয়ে ভিন্ন। স্থির তরঙ্গের সকল কণা একই সময়ে তাদের সাম্যাবস্থান অতিক্রম করে।</p><br>
+<p>তবে, যদি 'দশা পার্থক্য' বলতে পর পর দুটি সুস্পন্দ বিন্দুর <b>অবস্থানের</b> দশা পার্থক্য বোঝানো হয় যা তাদের তরঙ্গদৈর্ঘ্য ভিত্তিক, তাহলে আমরা জানি যে পর পর দুটি সুস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব λ/2।</p><br>
+<p>পথ পার্থক্য Δx = λ/2 এর জন্য দশা পার্থক্য Δφ = (2π/λ) × Δx</p><br>
+<p>Δφ = (2π/λ) × (λ/2) = π</p><br>
+<p>সুতরাং, পাশাপাশি দুটি সুস্পন্দ বিন্দুর মধ্যবর্তী দশা পার্থক্য π রেডিয়ান (বা ১৮০°)。 এর মানে হলো, একটি সুস্পন্দ বিন্দুর কণা যখন এক দিকে সর্বোচ্চ সরণে থাকে, তার পার্শ্ববর্তী সুস্পন্দ বিন্দুর কণা তখন বিপরীত দিকে সর্বোচ্চ সরণে থাকে।</p>`,
+        },
+        {
+          id: 10,
+          question:
+            "তরঙ্গদৈর্ঘ্য λ হলে পর পর তিনটি নিস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব কত?",
+          options: {
+            a: "λ/2",
+            b: "2λ",
+            c: "3λ/2",
+            d: "λ",
+          },
+          correct: "d",
+          explanation: `<p>স্থির তরঙ্গে (Stationary wave) পর পর দুটি নিস্পন্দ বিন্দুর (Nodes) মধ্যবর্তী দূরত্ব হলো λ/2।</p><br>
+<p>যদি তিনটি পরপর নিস্পন্দ বিন্দু থাকে, ধরুন N<sub>1</sub>, N<sub>2</sub>, N<sub>3</sub>, তাহলে:</p><br>
+<p>N<sub>1</sub> থেকে N<sub>2</sub> এর দূরত্ব = λ/2</p><br>
+<p>N<sub>2</sub> থেকে N<sub>3</sub> এর দূরত্ব = λ/2</p><br>
+<p>সুতরাং, পর পর তিনটি নিস্পন্দ বিন্দুর মধ্যবর্তী মোট দূরত্ব হবে:</p><br>
+<p>λ/2 + λ/2 = λ</p><br>
+<p>অতএব, তরঙ্গদৈর্ঘ্য λ হলে পর পর তিনটি নিস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব হবে λ।</p>`,
+        },
+        {
+          id: 11,
+          question: "স্থির তরঙ্গের নিস্পন্দ বিন্দুতে কণার বেগ কত?",
+          options: {
+            a: "শূন্য",
+            b: "সর্বাধিক",
+            c: "সর্বনিম্ন কিন্তু শূন্য নয়",
+            d: "কোনোটিই নয়",
+          },
+          correct: "a",
+          explanation:
+            "<p>স্থির তরঙ্গের (Stationary wave) নিস্পন্দ বিন্দু (Node) হলো সেইসব স্থান যেখানে মাধ্যমের কণাগুলোর সরণ সর্বদা শূন্য হয়। যেহেতু কণাগুলো এই বিন্দুতে সরণ করে না, তাই তাদের বেগও সর্বদা শূন্য থাকে।</p><br><p>অন্যদিকে, সুস্পন্দ বিন্দুতে (Antinode) কণাগুলোর সরণ সর্বোচ্চ হয় এবং এই বিন্দুগুলোতে কণাগুলোর বেগ তাদের সাম্যাবস্থান অতিক্রম করার সময় সর্বাধিক হয়।</p><br><p>সুতরাং, স্থির তরঙ্গের নিস্পন্দ বিন্দুতে কণার বেগ শূন্য।</p>",
+        },
+        {
+          id: 12,
+          question:
+            "একটি সুস্পন্দ বিন্দু ও একটি সন্নিহিত নিস্পন্দ বিন্দুর মধ্যবর্তী ব্যবধান-",
+          options: {
+            a: "λ/8",
+            b: "3λ/4",
+            c: "λ/4",
+            d: "λ",
+          },
+          correct: "c",
+          explanation: `<p>স্থির তরঙ্গে (Stationary wave) সুস্পন্দ বিন্দু (Antinode) এবং নিস্পন্দ বিন্দু (Node) পর্যায়ক্রমে অবস্থান করে।</p><br>
+<p>আমরা জানি:</p><br>
+<p><ul>
+<li>পর পর দুটি নিস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব = λ/2</li>
+<li>পর পর দুটি সুস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব = λ/2</li>
+</ul></p><br>
+<p>একটি নিস্পন্দ বিন্দু এবং তার সন্নিহিত (নিকটতম) সুস্পন্দ বিন্দুর মধ্যবর্তী দূরত্ব হলো পর পর দুটি নিস্পন্দ বিন্দুর দূরত্বের অর্ধেক, বা পর পর দুটি সুস্পন্দ বিন্দুর দূরত্বের অর্ধেক।</p><br>
+<p>সুতরাং, একটি সুস্পন্দ বিন্দু ও একটি সন্নিহিত নিস্পন্দ বিন্দুর মধ্যবর্তী ব্যবধান = (λ/2) / ২ = λ/4।</p>`,
+        },
+      ];
+
+      const totalQuestions = questions.length;
+      let timeLeft = Math.floor(totalQuestions / 2) * 60;
+      const timerElement = document.getElementById("timer");
+      let timerInterval;
+
+      function updateTimer() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        timerElement.innerText = `${toBengaliNumber(
+          minutes
+        )} মিনিট ${toBengaliNumber(seconds)} সেকেন্ড`;
+
+        if (timeLeft > 0) {
+          timeLeft--;
+        } else {
+          stopTimer();
+          confirmSubmit();
+        }
+      }
+
+      function startTimer() {
+        console.log("Starting timer");
+        timerElement.innerText = `${toBengaliNumber(
+          Math.floor(timeLeft / 60)
+        )} মিনিট ${toBengaliNumber(timeLeft % 60)} সেকেন্ড`;
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      function stopTimer() {
+        clearInterval(timerInterval);
+        console.log("Timer stopped");
+      }
+
+      function toBengaliNumber(num) {
+        const bengaliDigits = [
+          "০",
+          "১",
+          "২",
+          "৩",
+          "৪",
+          "৫",
+          "৬",
+          "৭",
+          "৮",
+          "৯",
+        ];
+        let numStr = num.toString();
+
+        let isNegative = num < 0;
+        if (isNegative) {
+          numStr = numStr.substring(1);
+        }
+
+        if (numStr.includes(".")) {
+          let [integerPart, decimalPart] = numStr.split(".");
+          let integerBengali = integerPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          let decimalBengali = decimalPart
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (
+            (isNegative ? "−" : "") + integerBengali + "." + decimalBengali
+          );
+        } else {
+          let integerBengali = numStr
+            .split("")
+            .map((digit) => bengaliDigits[parseInt(digit)])
+            .join("");
+          return (isNegative ? "−" : "") + integerBengali;
+        }
+      }
+
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+      }
+
+      function generateQuestions() {
+        console.log("Generating questions");
+        const examContainer = document.querySelector("#exam");
+        if (!examContainer) {
+          console.error("Exam container (#exam) not found!");
+          return;
+        }
+        examContainer.innerHTML = "";
+        console.log("Questions array:", questions);
+        const shuffledQuestions = shuffleArray([...questions]);
+        shuffledQuestions.forEach((question, index) => {
+          console.log(`Generating question ${index + 1}:`, question);
+          const questionDiv = document.createElement("div");
+          questionDiv.classList.add("question-container");
+          questionDiv.setAttribute("data-question", question.id);
+          questionDiv.setAttribute("data-correct", question.correct);
+
+          let optionsHTML = "";
+          for (let option in question.options) {
+            optionsHTML += `
+                                                                <label class="option" data-option="${option}">
+                                                                  <div class="circle">${option}</div>
+                                                                  <span class="option-text">${question.options[option]}</span>
+                                                                </label>
+                                                              `;
+          }
+
+          const explanationHTML = question.explanation
+            ? `<div class="explanation-dropdown">
+                                                                   <button class="explanation-btn">ব্যাখ্যা দেখো</button>
+                                                                   <div class="explanation-content">
+                                                                     <div class="explanation-label">ব্যাখ্যা:</div>
+                                                                     ${question.explanation}
+                                                                   </div>
+                                                                 </div>`
+            : "";
+
+          questionDiv.innerHTML = `
+                                                              <p class="question-label">${
+                                                                index + 1
+                                                              }. ${
+            question.question
+          }</p>
+                                                              <div class="options">
+                                                                ${optionsHTML}
+                                                              </div>
+                                                              ${explanationHTML}
+                                                            `;
+          examContainer.appendChild(questionDiv);
+          console.log(`Appended question ${index + 1} to exam container`);
+        });
+
+        const questionContainers = document.querySelectorAll(
+          ".question-container"
+        );
+        console.log(`Found ${questionContainers.length} question containers`);
+        questionContainers.forEach((container, idx) => {
+          console.log(`Setting question ${idx + 1} to visible`);
+          container.style.display = "block";
+        });
+
+        document.querySelectorAll(".option").forEach((option) => {
+          option.addEventListener(
+            "click",
+            function (e) {
+              e.preventDefault();
+              const parent = this.closest(".question-container");
+              if (parent.classList.contains("locked")) return;
+              parent.classList.add("locked");
+              parent.querySelectorAll(".option").forEach((el) => {
+                if (el !== this) {
+                  el.style.pointerEvents = "none";
+                  el.style.cursor = "default";
+                }
+                el.classList.remove("selected");
+              });
+              this.classList.add("selected");
+              console.log(
+                `Option selected for question ${parent.getAttribute(
+                  "data-question"
+                )}: ${this.getAttribute("data-option")}`
+              );
+            },
+            { once: true }
+          );
+        });
+
+        document.querySelectorAll(".explanation-btn").forEach((btn) => {
+          btn.addEventListener("click", function () {
+            const content = this.nextElementSibling;
+            content.classList.toggle("visible");
+            this.classList.toggle("active");
+            console.log("Toggled explanation visibility");
+          });
+        });
+
+        const examInfo = document.getElementById("exam-info");
+        if (examInfo) {
+          examInfo.innerText = `পূর্ণ নম্বরঃ ${toBengaliNumber(
+            totalQuestions
+          )}`;
+          console.log("Exam info updated");
+        } else {
+          console.error("Exam info element not found!");
+        }
+      }
+
+      function initializeChart() {
+        console.log("Initializing chart");
+        const ctx = document.getElementById("scoreChart").getContext("2d");
+        chartInstance = new Chart(ctx, {
+          type: "pie",
+          data: {
+            labels: ["ঠিক উত্তর", "ভুল উত্তর", "অনুত্তরিত"],
+            datasets: [
+              {
+                data: [0, 0, 0],
+                backgroundColor: ["#34c759", "#ff3b30", "#007aff"],
+                borderColor: "#fff",
+                borderWidth: 2,
+                hoverOffset: 10,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "10%",
+            layout: {
+              padding: 10,
+            },
+            plugins: {
+              legend: {
+                position: "bottom",
+                labels: {
+                  font: {
+                    family: '"Hind Siliguri", sans-serif',
+                    size: 13,
+                    weight: "bold",
+                  },
+                  color: "#333",
+                  padding: 12,
+                  boxWidth: 14,
+                  generateLabels: (chart) => {
+                    const data = chart.data;
+                    return data.labels.map((label, i) => ({
+                      text: label,
+                      font: {
+                        family: '"Hind Siliguri", sans-serif',
+                      },
+                      fillStyle: data.datasets[0].backgroundColor[i],
+                      hidden: !chart.getDataVisibility(i),
+                      index: i,
+                    }));
+                  },
+                },
+              },
+              tooltip: {
+                backgroundColor: "rgba(0, 0, 0, 0.9)",
+                cornerRadius: 6,
+                titleFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 14,
+                  weight: "bold",
+                },
+                bodyFont: {
+                  family: '"Hind Siliguri", sans-serif',
+                  size: 13,
+                },
+                padding: 10,
+                boxPadding: 5,
+              },
+            },
+            animation: {
+              animateScale: true,
+              animateRotate: true,
+              duration: 1000,
+              easing: "easeOutQuart",
+            },
+            elements: {
+              arc: {
+                borderRadius: 8,
+              },
+            },
+            onClick: (e, elements) => {
+              if (elements.length > 0) {
+                const index = elements[0].index;
+                const filter = ["correct", "wrong", "unanswered"][index];
+                filterQuestions(filter);
+              } else {
+                filterQuestions("all");
+              }
+            },
+          },
+        });
+        console.log("Chart initialized");
+      }
+
+      function filterQuestions(type) {
+        console.log(`Filtering questions by type: ${type}`);
+        document.querySelectorAll(".question-container").forEach((question) => {
+          const status = question.getAttribute("data-status");
+          if (type === "all" || status === type) {
+            question.style.display = "block";
+          } else {
+            question.style.display = "none";
+          }
+        });
+      }
+
+      function showConfirmPopup() {
+        console.log("Showing confirm popup");
+        document.getElementById("confirmPopup").style.display = "block";
+      }
+
+      function autoSubmitScore() {
+        console.log("Auto-submitting score");
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document.querySelectorAll(".question-container").forEach((question) => {
+          let correctAnswer = question.getAttribute("data-correct");
+          let selectedOption = question.querySelector(".option.selected");
+
+          if (selectedOption) {
+            answered++;
+            let chosenAnswer = selectedOption.getAttribute("data-option");
+            if (chosenAnswer === correctAnswer) {
+              score += 1;
+              correct++;
+              question.setAttribute("data-status", "correct");
+            } else {
+              score -= 0.25;
+              wrong++;
+              question.setAttribute("data-status", "wrong");
+            }
+          } else {
+            unanswered++;
+            question.setAttribute("data-status", "unanswered");
+          }
+        });
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        const formData = new FormData();
+        formData.append("userID", userID);
+        formData.append("finalScore", score.toFixed(2));
+        formData.append("correctAnswers", correct);
+        formData.append("wrongAnswers", wrong);
+        formData.append("unanswered", unanswered);
+
+        const url = "https://formspree.io/f/xpwy";
+        navigator.sendBeacon(url, formData);
+        console.log("Auto-submission sent via sendBeacon for userID:", userID);
+      }
+
+      function confirmSubmit() {
+        console.log("Confirming submission");
+        document.getElementById("confirmPopup").style.display = "none";
+        stopTimer();
+        let score = 0,
+          total = questions.length,
+          answered = 0,
+          correct = 0,
+          wrong = 0,
+          unanswered = 0;
+
+        document
+          .querySelectorAll(".question-container")
+          .forEach((question, index) => {
+            let correctAnswer = question.getAttribute("data-correct");
+            let selectedOption = question.querySelector(".option.selected");
+
+            if (selectedOption) {
+              answered++;
+              let chosenAnswer = selectedOption.getAttribute("data-option");
+              if (chosenAnswer === correctAnswer) {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("correct-text");
+                score += 1;
+                correct++;
+                question.setAttribute("data-status", "correct");
+              } else {
+                selectedOption
+                  .querySelector(".option-text")
+                  .classList.add("incorrect-text");
+                question
+                  .querySelector(
+                    `[data-option="${correctAnswer}"] .option-text`
+                  )
+                  .classList.add("correct-text");
+                score -= 0.25;
+                wrong++;
+                question.setAttribute("data-status", "wrong");
+              }
+            } else {
+              question
+                .querySelector(`[data-option="${correctAnswer}"] .option-text`)
+                .classList.add("unattempted-text");
+              unanswered++;
+              question.setAttribute("data-status", "unanswered");
+            }
+            question.style.display = "block";
+
+            const explanationDropdown = question.querySelector(
+              ".explanation-dropdown"
+            );
+            if (explanationDropdown) {
+              explanationDropdown.classList.add("visible");
+            }
+          });
+
+        const chartContainer = document.querySelector(".chart-container");
+        chartContainer.classList.add("visible");
+        if (!chartInstance) {
+          initializeChart();
+        }
+        chartInstance.data.datasets[0].data = [correct, wrong, unanswered];
+        chartInstance.update();
+        console.log("Chart updated with data:", [correct, wrong, unanswered]);
+
+        const userID = sessionStorage.getItem("userID") || "anonymous";
+        document.getElementById("totalQuestions").innerText =
+          toBengaliNumber(total);
+        document.getElementById("answered").innerText =
+          toBengaliNumber(answered);
+        document.getElementById("correctAnswers").innerText =
+          toBengaliNumber(correct);
+        document.getElementById("wrongAnswers").innerText =
+          toBengaliNumber(wrong);
+        document.getElementById("unanswered").innerText =
+          toBengaliNumber(unanswered);
+        document.getElementById("finalScore").innerText = toBengaliNumber(
+          score.toFixed(2)
+        );
+
+        document.getElementById("formUserID").value = userID;
+        document.getElementById("formFinalScore").value = score.toFixed(2);
+        document.getElementById("formCorrectAnswers").value = correct;
+        document.getElementById("formWrongAnswers").value = wrong;
+        document.getElementById("formUnanswered").value = unanswered;
+
+        document.getElementById("submitBtn").style.display = "none";
+
+        document.getElementById("scorePopup").style.display = "block";
+
+        const form = document.getElementById("scoreForm");
+        fetch(form.action, {
+          method: "POST",
+          body: new FormData(form),
+          headers: {
+            Accept: "application/json",
+          },
+        })
+          .then((response) => {
+            if (response.ok) {
+              console.log("Form submitted successfully");
+              form.reset();
+            } else {
+              console.error("Form submission failed:", response.statusText);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+
+      function cancelSubmit() {
+        console.log("Canceling submission");
+        document.getElementById("confirmPopup").style.display = "none";
+      }
+
+      document
+        .getElementById("submitBtn")
+        .addEventListener("click", function () {
+          console.log("Submit button clicked");
+          showConfirmPopup();
+        });
+
+      function closePopup() {
+        console.log("Closing score popup");
+        const scorePopup = document.getElementById("scorePopup");
+        scorePopup.classList.add("slide-out");
+        setTimeout(() => {
+          scorePopup.style.display = "none";
+          scorePopup.classList.remove("slide-out");
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }, 500);
+      }
+
+      document
+        .getElementById("scoreForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+          console.log("Score form submitted");
+          closePopup();
+        });
+    </script>
+  </body>
+</html>
